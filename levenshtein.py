@@ -1,5 +1,5 @@
-## figuring out the Levenshtein distance between two strings
-## you're allowed to insert, delete, and swap, and each costs 1
+# figuring out the Levenshtein distance between two strings
+# you're allowed to insert, delete, and swap, and each costs 1
 
 
 def levenshtein(string1, string2):
@@ -22,21 +22,54 @@ def levenshtein(string1, string2):
 
 
 def findMappings(startString, targetString):
-    return mappingsList
+    # return mappingsList
+    pass
 
-def scoreMapping(mapping, targetString):
-    maxLen = len(targetString)
+
+def scoreMapping(mapping, startString, targetString):
+    """Score mapping based on number of matches and subs.
+
+    >>> scoreMapping({0:0, 1:1, 2:2}, "012", "0123")
+    0
+
+    >>> scoreMapping({0:1, 2:2}, "012", "0123")
+    2
+
+    >>> scoreMapping({0:1, 1:2}, "012", "012")
+    2
+
+    >>> scoreMapping({0:0, 2:2}, "012", "0123")
+    1
+    """
+
+    score = 0
+    missingNos = [i for i in range(len(startString)) if i not in mapping]
+    for ind in missingNos:
+        lowerInd = max([i for i in mapping if i < ind] + [-1])
+        upperInd = min([i for i in mapping if i > ind] + [len(targetString)])
+        lowerBound = mapping.get(lowerInd, -1)
+        upperBound = mapping.get(upperInd, len(targetString))
+        isSub = upperBound - lowerBound > 1
+
+        if isSub:
+            score += 1
+            mapping.update({ind: lowerBound + 1})
+        else:
+            score += 2
+
     return score
 
+
 def rankMappings(mappingsList):
-    return bestMapping
+    # return bestMapping
+    pass
+
 
 def makeChanges(startString, targetString, bestMapping):
-    return changesList
+    # return changesList
+    pass
 
-
-if __name__ = '__main__':
+if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
 
