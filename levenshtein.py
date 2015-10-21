@@ -3,96 +3,82 @@
 
 import itertools
 
+# nodeTypes
+ROOT = 0
+DELETE = 1
+INSERT = 2
+SUBSTITUTION = 3
+LEAF = 4
 
-def levenshtein(string1, string2):
-    # determine which string is the startString (shorter)
-    # and which is the the targetString (longer)
-    if len(string1) > len(string2):
-        startString = string2
-        targetString = string1
-    else:
-        startString = string1
-        targetString = string2
+class Node():
+    def __init__(self, start, target, nodeType=None):
+        self.start = start
+        self.target = target
+        self.nodeType = nodeType
 
-    mappingsList = findMappings(startString, targetString)
-    bestMappingInfo = rankMappings(mappingsList)
-    changesList = makeChanges(startString, targetString, bestMappingInfo)
-
-    lDistance = len(changesList)
-
-    return lDistance
-
-
-def findMappings(startString, targetString):
-    # return mappingsList
-    pass
-
-def scoreMapping(mapping, startString, targetString):
-    """Score mapping based on number of matches and subs.
-
-    >>> scoreMapping({0:0, 1:1, 2:2}, "012", "0123")
-    {'score': 0, 'mappingDict': {0: 0, 1: 1, 2: 2}, 'newMappingDict': {0: 0, 1: 1, 2: 2}}
-
-    >>> scoreMapping({0:1, 2:2}, "012", "0123")
-    {'score': 2, 'mappingDict': {0: 1, 2: 2}, 'newMappingDict': {0: 1, 2: 2}}
-
-    >>> scoreMapping({0:1, 1:2}, "012", "012")
-    {'score': 2, 'mappingDict': {0: 1, 1: 2}, 'newMappingDict': {0: 1, 1: 2}}
-
-    >>> scoreMapping({0:0, 2:2}, "012", "0123")
-    {'score': 1, 'mappingDict': {0: 0, 2: 2}, 'newMappingDict': {0: 0, 1: 1, 2: 2}}
-
-    >>> scoreMapping({1:1}, "012", "0123")
-    {'score': 2, 'mappingDict': {1: 1}, 'newMappingDict': {0: 0, 1: 1, 2: 2}}
-
-    """
-    newMappingDict = mapping.copy()
-
-    score = 0
-    missingNos = [i for i in range(len(startString)) if i not in newMappingDict]
-    for ind in missingNos:
-        lowerInd = max([i for i in newMappingDict if i < ind] + [-1])
-        upperInd = min([i for i in newMappingDict if i > ind] + [len(targetString)])
-        lowerBound = newMappingDict.get(lowerInd, -1)
-        upperBound = newMappingDict.get(upperInd, len(targetString))
-        isSub = upperBound - lowerBound > 1
-
-        if isSub:
-            score += 1
-            newMappingDict.update({ind: lowerBound + 1})
+        if self.isLeaf():
+            self.children = {}
+            self.nodeType = LEAF
         else:
-            score += 2
+            self.children = {"delete": Node(start[:-1], target, DELETE),
+                            "insert": Node(start, target[:-1], INSERT),
+                            "substitution": Node(start[:-1], target[:-1], SUBSTITUTION)}
 
-    return {"score": score, "mappingDict": mapping, "newMappingDict": newMappingDict}
+    def getMinChildCostAndPath(self):
+        if self.nodeType == LEAF:
+            cost = max(len(self.start), len(self.target))
+            path = [self]
 
+        else:
+            allCostPaths = [child.getCost() for child in self.children.values()]
+            cost, childPath = min(allCostPaths, key=lambda x:x[0])
+            path = childPath
 
-def rankMappings(mappingsList, startString, targetString):
-    """pick the mapping with the lowest score (best match)
-
-    >>> rankMappings([{0: 0, 1: 1, 2: 2}], "012", "0123")["mappingDict"]
-    {0: 0, 1: 1, 2: 2}
-
-    >>> rankMappings([{0:1, 2:2}, {0:0, 1:1, 2:2}], "012", "0123")["mappingDict"]
-    {0: 0, 1: 1, 2: 2}
-
-    >>> rankMappings([{0: 0, 2: 2}, {0: 1, 2: 2}, ], "012", "0123")["mappingDict"]
-    {0: 0, 2: 2}
-
-    """
-
-    scoredMappings = [scoreMapping(mapping, startString, targetString)
-                        for mapping in mappingsList]
-
-    bestMapping = min(scoredMappings, key=lambda scoredMap: scoredMap["score"])
-
-    return bestMapping
+        return cost, path
 
 
-def makeChanges(startString, targetString, bestMapping):
-    # return changesList
-    pass
+    def getCost(self):
+        childCost, childPath = self.getMinChildCostAndPath()
+        child = childPath[0]
+
+        if child.nodeType == LEAF:
+            costAdjustment = 0
+
+        elif child.nodeType in [DELETE, INSERT]:
+            costAdjustment = 1
+
+        elif child.nodeType == SUBSTITUTION:
+            if self.start == "k":
+                import pdb; pdb.set_trace()
+            if self.start[-1] == self.target[-1]:
+                costAdjustment = 0
+            else:
+                costAdjustment= 1
+
+        path = [self] + childPath
+        try:
+            cost = childCost + costAdjustment
+        except:
+            import pdb; pdb.set_trace()
+
+        return cost, path
+
+    def isLeaf(self):
+        return min(len(self.start), len(self.target)) == 0
+
+
+string1 = "kitten"
+string2 = "sitting"
+
+string3 = "kit"
+string4 = "sitg"
+
 
 if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
+    #import doctest
+    #doctest.testmod()
+    cost, path =  Node(string3,string4,ROOT).getCost()
+    print cost
+    for node in path:
+        print [node.start, node.target, node.getCost()[0]]
 
