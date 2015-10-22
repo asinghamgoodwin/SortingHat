@@ -9,6 +9,12 @@ DELETE = 1
 INSERT = 2
 SUBSTITUTION = 3
 
+nodeTypeNames = {
+        0: "ROOT",
+        1: "DELETE",
+        2: "INSERT",
+        3: "SUBSTITUTION"}
+
 class Node():
     def __init__(self, start, target, nodeType=None):
         """ Initialize Node with start and target strings.
@@ -34,7 +40,7 @@ class Node():
 
     def __repr__(self):
         return "<ClassName: Node, Start: '{}', Target: '{}', nodeType: {}>".format(
-                                                self.start, self.target, self.nodeType)
+                                    self.start, self.target, nodeTypeNames[self.nodeType])
 
     def getChildCost(self, child):
         """ Get the cost of a child, adjusted for the operation that it represents.
@@ -74,16 +80,9 @@ class Node():
         """
         # import pdb; pdb.set_trace()
 
-        # if one string is empty, the cost is the number of inserts required
-        # to get to the other one.
-        if self.isLeaf:
-            cost = max(len(self.start), len(self.target))
-            path = [self]
-
-        else:
-            allCostPaths = [self.getChildCost(child) for child in self.children.values()]
-            cost, childPath = min(allCostPaths, key=lambda x:x[0])
-            path = childPath
+        allCostPaths = [self.getChildCost(child) for child in self.children.values()]
+        cost, childPath = min(allCostPaths, key=lambda x:x[0])
+        path = childPath
 
         return cost, path
 
@@ -92,13 +91,20 @@ class Node():
         """ Gets the cost and prepends itsself to the path.
         Returns
         -------
-        childCost: int
+        cost: int
         path: [Node]
         """
-        childCost, childPath = self.getMinChildCostAndPath()
-        path = [self] + childPath
+        # if one string is empty, the cost is the number of inserts required
+        # to get to the other one.
+        if self.isLeaf:
+            cost = max(len(self.start), len(self.target))
+            path = [self]
 
-        return childCost, path
+        else:
+            cost, childPath = self.getMinChildCostAndPath()
+            path = [self] + childPath
+
+        return cost, path
 
 
 
@@ -113,5 +119,5 @@ if __name__ == '__main__':
     cost, path =  Node(string2,string1,ROOT).getCost()
     print cost
     for node in path:
-        print [node.start, node.target, node.getCost()[0]]
+        print [node.start, node.target, nodeTypeNames[node.nodeType], "cost:"+str(node.getCost()[0])]
 
