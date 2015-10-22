@@ -8,29 +8,80 @@ ROOT = 0
 DELETE = 1
 INSERT = 2
 SUBSTITUTION = 3
-LEAF = 4
 
 class Node():
     def __init__(self, start, target, nodeType=None):
+        """ Initialize Node with start and target strings.
+        
+        Parameters
+        ----------
+        start: str
+        target: str
+        nodeType: int, 0-3 which correspond to the constants 
+                        ROOT, DELETE, INSERT, and SUBSTITUTION
+        """
         self.start = start
         self.target = target
         self.nodeType = nodeType
+        self.isLeaf = min(len(self.start), len(self.target)) == 0
 
-        if self.isLeaf():
+        if self.isLeaf:
             self.children = {}
-            self.nodeType = LEAF
         else:
             self.children = {"delete": Node(start[:-1], target, DELETE),
                             "insert": Node(start, target[:-1], INSERT),
                             "substitution": Node(start[:-1], target[:-1], SUBSTITUTION)}
 
+    def __repr__(self):
+        return "<ClassName: Node, Start: '{}', Target: '{}', nodeType: {}>".format(
+                                                self.start, self.target, self.nodeType)
+
+    def getChildCost(self, child):
+        """ Get the cost of a child, adjusted for the operation that it represents.
+
+        Parameters
+        ----------
+        child: Node
+
+        Returns
+        -------
+        cost: int
+        path: [Node]
+        """
+        childCost, childPath = child.getCost()
+
+        costAdjustment = 0
+
+        if child.nodeType in [DELETE, INSERT]:
+            costAdjustment = 1
+
+        # Substitution is free if the letters are the same
+        elif child.nodeType == SUBSTITUTION:
+            if self.start[-1] == self.target[-1]:
+                costAdjustment = 0
+            else:
+                costAdjustment = 1
+
+        return childCost+costAdjustment, childPath
+
+
     def getMinChildCostAndPath(self):
-        if self.nodeType == LEAF:
+        """ Finds minimum cost child and path to that child.
+        Returns
+        -------
+        cost: int
+        path: [Node]
+        """
+        # import pdb; pdb.set_trace()
+
+        # if one string is empty, the cost is the number of inserts required
+        # to get to the other one.
+        if self.isLeaf:
             cost = max(len(self.start), len(self.target))
             path = [self]
 
         else:
-            allCostPaths = [child.getCost() for child in self.children.values()]
+            allCostPaths = [self.getChildCost(child) for child in self.children.values()]
             cost, childPath = min(allCostPaths, key=lambda x:x[0])
             path = childPath
 
@@ -38,33 +89,17 @@ class Node():
 
 
     def getCost(self):
+        """ Gets the cost and prepends itsself to the path.
+        Returns
+        -------
+        childCost: int
+        path: [Node]
+        """
         childCost, childPath = self.getMinChildCostAndPath()
-        child = childPath[0]
-
-        if child.nodeType == LEAF:
-            costAdjustment = 0
-
-        elif child.nodeType in [DELETE, INSERT]:
-            costAdjustment = 1
-
-        elif child.nodeType == SUBSTITUTION:
-            if self.start == "k":
-                import pdb; pdb.set_trace()
-            if self.start[-1] == self.target[-1]:
-                costAdjustment = 0
-            else:
-                costAdjustment= 1
-
         path = [self] + childPath
-        try:
-            cost = childCost + costAdjustment
-        except:
-            import pdb; pdb.set_trace()
 
-        return cost, path
+        return childCost, path
 
-    def isLeaf(self):
-        return min(len(self.start), len(self.target)) == 0
 
 
 string1 = "kitten"
@@ -75,9 +110,7 @@ string4 = "sitg"
 
 
 if __name__ == '__main__':
-    #import doctest
-    #doctest.testmod()
-    cost, path =  Node(string3,string4,ROOT).getCost()
+    cost, path =  Node(string2,string1,ROOT).getCost()
     print cost
     for node in path:
         print [node.start, node.target, node.getCost()[0]]
